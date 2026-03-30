@@ -6,9 +6,6 @@ spring:
   flyway:
     enabled: true
 
-  cache:
-    type: none
-
 app:
   jwt:
     secret: test-secret-key-for-testing-only-must-be-at-least-256-bits-long-for-hmac
