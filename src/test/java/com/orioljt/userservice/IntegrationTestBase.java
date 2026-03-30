@@ -13,23 +13,24 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Testcontainers
 public abstract class IntegrationTestBase {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    static final PostgreSQLContainer<?> postgres;
+    static final GenericContainer<?> redis;
 
-    @Container
-    static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
-            .withExposedPorts(6379);
+    static {
+        postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+        postgres.start();
+
+        redis = new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
+        redis.start();
+    }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -56,15 +57,10 @@ public abstract class IntegrationTestBase {
 
         assertEquals(201, response.getStatusCode().value(),
                 "Register failed: " + response.getBody());
-        assertNotNull(response.getBody(), "Register response body is null");
 
         try {
             JsonNode json = objectMapper.readTree(response.getBody());
             String token = json.get("accessToken").asText(null);
-            if (token == null) {
-                // Try snake_case in case Jackson naming strategy differs
-                token = json.has("access_token") ? json.get("access_token").asText(null) : null;
-            }
             assertNotNull(token, "accessToken is null in response: " + response.getBody());
             return token;
         } catch (Exception e) {
