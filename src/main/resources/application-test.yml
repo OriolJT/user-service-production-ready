@@ -1,0 +1,20 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+
+  cache:
+    type: none
+
+app:
+  jwt:
+    secret: test-secret-key-for-testing-only-must-be-at-least-256-bits-long-for-hmac
+    access-expiration-ms: 3600000
+    refresh-expiration-ms: 86400000
+
+logging:
+  level:
+    com.orioljt.userservice: DEBUG
