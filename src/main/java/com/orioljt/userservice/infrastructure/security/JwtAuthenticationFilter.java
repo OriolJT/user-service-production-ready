@@ -38,22 +38,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
 
         String authHeader = request.getHeader(AUTHORIZATION_HEADER);
-        log.debug("JWT filter - path: {}, authHeader present: {}", request.getServletPath(), authHeader != null);
 
         if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
             String token = authHeader.substring(BEARER_PREFIX.length());
-            log.debug("JWT filter - token length: {}, first 20 chars: {}", token.length(), token.substring(0, Math.min(20, token.length())));
 
-            boolean valid = jwtProvider.validateToken(token);
-            log.debug("JWT filter - token valid: {}", valid);
-
-            if (valid) {
+            if (jwtProvider.validateToken(token)) {
                 String username = jwtProvider.extractUsername(token);
-                log.debug("JWT filter - extracted username: {}", username);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    log.debug("JWT filter - loaded user details: {}, authorities: {}", userDetails.getUsername(), userDetails.getAuthorities());
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
@@ -64,11 +57,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("JWT filter - authentication set successfully");
                 }
             }
-        } else {
-            log.debug("JWT filter - no Bearer token found in request");
         }
 
         filterChain.doFilter(request, response);
