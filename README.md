@@ -7,6 +7,17 @@
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 ![CI](https://github.com/OriolJT/user-service-production-ready/actions/workflows/ci.yml/badge.svg)
 
+> ### What This Demonstrates
+>
+> - **Production-ready Spring Boot service design** with clean layered architecture
+> - **Secure authentication** with self-issued JWT, refresh token rotation, and BCrypt hashing
+> - **Role-based access control (RBAC)** with method-level `@PreAuthorize` authorization
+> - **Redis caching** with TTL-based eviction on reads and explicit invalidation on writes
+> - **Database migrations** with Flyway — no `ddl-auto: create` shortcuts
+> - **Integration testing** with Testcontainers against real PostgreSQL
+> - **CI/CD pipeline** with GitHub Actions, JaCoCo coverage reporting
+> - **Containerization done right** — multi-stage Docker build, non-root user, health checks
+
 A production-grade user management and authentication service built with Spring Boot 3.5. It implements JWT-based authentication, role-based access control, Redis caching, database migrations, structured logging, and metrics -- all wired together with a clean layered architecture and backed by CI with test coverage. The goal is a service that could be deployed to production as-is, not a tutorial or proof of concept.
 
 ---
@@ -44,6 +55,35 @@ src/main/java/com/orioljt/userservice/
 | `application`    | Business logic, DTO definitions, entity-DTO mapping |
 | `infrastructure` | Cross-cutting concerns: JWT issuance/validation, Spring Security configuration, Redis cache configuration |
 | `api`            | HTTP interface: controllers, request validation, error response formatting |
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant F as JwtAuthFilter
+    participant SC as SecurityContext
+    participant Ctrl as Controller
+    participant Svc as Service
+    participant Cache as Redis Cache
+    participant DB as PostgreSQL
+
+    C->>F: GET /api/users/me<br/>Authorization: Bearer <jwt>
+    F->>F: Validate JWT signature & expiry
+    F->>SC: Set Authentication
+    SC->>Ctrl: Authorized request
+    Ctrl->>Svc: getProfile(userId)
+    Svc->>Cache: Check cache
+    alt Cache hit
+        Cache-->>Svc: Cached user
+    else Cache miss
+        Svc->>DB: SELECT user
+        DB-->>Svc: User entity
+        Svc->>Cache: Store in cache (TTL)
+    end
+    Svc-->>Ctrl: UserResponse DTO
+    Ctrl-->>C: 200 OK + JSON
+```
 
 ---
 
@@ -306,6 +346,20 @@ user-service-production-ready/
 ├── gradlew.bat
 └── settings.gradle.kts
 ```
+
+---
+
+## Use Case
+
+**Who would use this:** Any team that needs a user management and authentication service as part of a larger platform — as a standalone auth service or as a template for building secured Spring Boot APIs.
+
+**Where this fits:** This service sits at the edge of a backend platform, handling user registration, login, token management, and access control. In a microservices architecture, it would be the identity service that other services delegate authentication to.
+
+**Real-world scenarios this solves:**
+- Onboarding new users with secure registration and email uniqueness enforcement
+- Issuing and rotating JWT tokens without depending on an external identity provider
+- Enforcing role-based permissions across API endpoints
+- Caching frequently accessed user profiles to reduce database load
 
 ---
 
