@@ -1,6 +1,7 @@
 package com.orioljt.userservice;
 
-import com.orioljt.userservice.application.dto.AuthResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orioljt.userservice.application.dto.RegisterRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,6 +15,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -39,14 +43,33 @@ public abstract class IntegrationTestBase {
     @Autowired
     protected TestRestTemplate restTemplate;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     protected String registerAndGetToken(String email, String username, String password) {
         RegisterRequest request = new RegisterRequest(email, username, password, "Test", "User");
-        ResponseEntity<AuthResponse> response = restTemplate.postForEntity(
+        ResponseEntity<String> response = restTemplate.postForEntity(
                 "/api/auth/register",
                 request,
-                AuthResponse.class
+                String.class
         );
-        return response.getBody().accessToken();
+
+        assertEquals(201, response.getStatusCode().value(),
+                "Register failed: " + response.getBody());
+        assertNotNull(response.getBody(), "Register response body is null");
+
+        try {
+            JsonNode json = objectMapper.readTree(response.getBody());
+            String token = json.get("accessToken").asText(null);
+            if (token == null) {
+                // Try snake_case in case Jackson naming strategy differs
+                token = json.has("access_token") ? json.get("access_token").asText(null) : null;
+            }
+            assertNotNull(token, "accessToken is null in response: " + response.getBody());
+            return token;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse register response: " + response.getBody(), e);
+        }
     }
 
     protected HttpHeaders authHeaders(String token) {
