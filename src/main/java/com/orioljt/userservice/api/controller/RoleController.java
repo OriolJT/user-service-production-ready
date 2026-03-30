@@ -29,13 +29,13 @@ public class RoleController {
 
     @GetMapping
     public ResponseEntity<List<RoleResponse>> listRoles() {
-        List<RoleResponse> response = roleService.listRoles();
+        List<RoleResponse> response = roleService.findAll();
         return ResponseEntity.ok(response);
     }
 
     @PostMapping
     public ResponseEntity<RoleResponse> createRole(@Valid @RequestBody CreateRoleRequest request) {
-        RoleResponse response = roleService.createRole(request);
+        RoleResponse response = roleService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

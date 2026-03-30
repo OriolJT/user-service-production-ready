@@ -54,14 +54,14 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> listUsers(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<UserResponse> response = userService.listUsers(pageable);
+        Page<UserResponse> response = userService.findAll(pageable);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
-        userService.deleteUser(id);
+        userService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
